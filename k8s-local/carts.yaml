@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
       - name: carts
-        image: public.ecr.aws/aws-containers/retail-store-sample-carts:1.6.1
+        image: public.ecr.aws/aws-containers/retail-store-sample-cart:1.6.1
         ports:
         - containerPort: 8080
         env:
