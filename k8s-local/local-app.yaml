@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  labels:
+    app: catalog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog
+  template:
+    metadata:
+      labels:
+        app: catalog
+    spec:
+      containers:
+      - name: catalog
+        image: public.ecr.aws/aws-containers/retail-store-sample-catalog:1.6.1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_PASSWORD
+          value: "admin"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: catalog
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+  labels:
+    app: ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+    spec:
+      containers:
+      - name: ui
+        image: public.ecr.aws/aws-containers/retail-store-sample-ui:1.6.1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ENDPOINT_CATALOG
+          value: "http://catalog:8080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30088
+  selector:
+    app: ui

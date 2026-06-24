@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  labels:
+    app: checkout
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkout
+  template:
+    metadata:
+      labels:
+        app: checkout
+    spec:
+      containers:
+      - name: checkout
+        image: public.ecr.aws/aws-containers/retail-store-sample-checkout:1.6.1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ENDPOINT_CARTS
+          value: "http://carts:8080"
+        - name: ENDPOINT_ORDERS
+          value: "http://orders:8080"
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: checkout
