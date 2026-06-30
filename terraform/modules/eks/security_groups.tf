@@ -224,12 +224,7 @@ resource "aws_security_group_rule" "node_ingress_vpc_dns_tcp" {
   security_group_id = aws_security_group.node.id
 }
 
-resource "aws_security_group" "_additional" {
-  for_each = {
-    for idx, rule in var.additional_security_group_rules : idx => rule
-    if rule.type == "ingress" && length(rule.cidr_blocks) > 0
-  }
-
+resource "aws_security_group" "additional" {
   count = local.has_additional_sg ? 1 : 0
 
   name        = "${var.cluster_name}-additional-sg"

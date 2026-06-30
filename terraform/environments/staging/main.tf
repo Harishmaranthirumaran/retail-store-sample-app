@@ -40,17 +40,18 @@ provider "aws" {
 module "vpc" {
   source = "../modules/vpc"
 
-  vpc_cidr             = var.vpc_cidr
-  availability_zones   = var.availability_zones
-  vpc_name             = "${var.cluster_name}-vpc"
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
-  enable_vpn_gateway   = false
-  enable_dns_hostnames = true
-  enable_dns_support   = true
-
-  public_subnet_cidrs  = var.public_subnet_cidrs
-  private_subnet_cidrs = var.private_subnet_cidrs
+  name                   = "${var.cluster_name}-vpc"
+  cidr                   = var.vpc_cidr
+  azs                    = var.availability_zones
+  public_subnets         = var.public_subnet_cidrs
+  private_subnets        = var.private_subnet_cidrs
+  database_subnets       = var.database_subnet_cidrs
+  enable_nat_gateway     = true
+  single_nat_gateway     = true
+  enable_vpn_gateway     = false
+  enable_dns_hostnames   = true
+  enable_dns_support     = true
+  enable_vpc_endpoints   = true
 
   tags = var.tags
 }
@@ -58,9 +59,11 @@ module "vpc" {
 module "security" {
   source = "../modules/security"
 
-  vpc_id      = module.vpc.vpc_id
-  environment = var.environment
-  tags        = var.tags
+  vpc_id          = module.vpc.vpc_id
+  vpc_cidr_block  = module.vpc.vpc_cidr_block
+  name            = "${var.cluster_name}-security"
+  environment     = var.environment
+  tags            = var.tags
 }
 
 module "eks" {
@@ -73,14 +76,14 @@ module "eks" {
   private_subnet_ids       = module.vpc.private_subnet_ids
   public_subnet_ids        = module.vpc.public_subnet_ids
 
-  cluster_endpoint_public_access = true
+  cluster_endpoint_public_access       = true
   cluster_endpoint_public_access_cidrs = var.allowed_cidrs
 
   managed_node_groups = var.managed_node_groups
 
-  enable_irsa_for_alb_controller  = true
-  enable_irsa_for_external_dns    = true
-  enable_irsa_for_external_secrets = true
+  enable_aws_load_balancer_controller = true
+  enable_external_dns                  = true
+  enable_external_secrets              = true
 
   tags = var.tags
 }
@@ -88,12 +91,11 @@ module "eks" {
 module "monitoring" {
   source = "../modules/monitoring"
 
-  cluster_name    = module.eks.cluster_name
-  cluster_endpoint = module.eks.cluster_endpoint
-  oidc_provider_arn = module.eks.oidc_provider_arn
-
+  cluster_name                     = module.eks.cluster_name
+  cluster_endpoint                 = module.eks.cluster_endpoint
+  oidc_provider_arn                = module.eks.oidc_provider_arn
   enable_amazon_managed_prometheus = var.enable_amazon_managed_prometheus
-  enable_amazon_managed_grafana    = var.enable_amazon_managed_grafana
+  enable_amazon_managed_grafana     = var.enable_amazon_managed_grafana
 
   tags = var.tags
 }
