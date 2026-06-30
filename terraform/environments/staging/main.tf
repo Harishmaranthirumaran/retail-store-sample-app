@@ -38,7 +38,7 @@ provider "aws" {
 }
 
 module "vpc" {
-  source = "../modules/vpc"
+  source = "../../modules/vpc"
 
   name                   = "${var.cluster_name}-vpc"
   cidr                   = var.vpc_cidr
@@ -57,7 +57,7 @@ module "vpc" {
 }
 
 module "security" {
-  source = "../modules/security"
+  source = "../../modules/security"
 
   vpc_id          = module.vpc.vpc_id
   vpc_cidr_block  = module.vpc.vpc_cidr_block
@@ -67,7 +67,7 @@ module "security" {
 }
 
 module "eks" {
-  source = "../modules/eks"
+  source = "../../modules/eks"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
@@ -89,7 +89,7 @@ module "eks" {
 }
 
 module "monitoring" {
-  source = "../modules/monitoring"
+  source = "../../modules/monitoring"
 
   cluster_name                     = module.eks.cluster_name
   cluster_endpoint                 = module.eks.cluster_endpoint
