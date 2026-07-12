@@ -1,0 +1,64 @@
+# Cart Service — Kubernetes deployment
+# Author: Harishmaran Subbaiah Thirumaran
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart
+  namespace: retail-store
+  labels:
+    app: cart
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cart
+  template:
+    metadata:
+      labels:
+        app: cart
+        tier: backend
+    spec:
+      containers:
+        - name: cart
+          image: harishmaran/retail-cart:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: CATALOG_URL
+              value: "http://catalog:8080"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart
+  namespace: retail-store
+spec:
+  selector:
+    app: cart
+  ports:
+    - port: 8081
+      targetPort: 8081
+  type: ClusterIP
