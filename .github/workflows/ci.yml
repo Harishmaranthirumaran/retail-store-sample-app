@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-catalog:
+    name: Catalog Service — Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: catalog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt pytest httpx
+      - run: pytest tests/ -v --tb=short
+
+  test-cart:
+    name: Cart Service — Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cart
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt pytest httpx
+      - run: pytest tests/ -v --tb=short
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [test-catalog, test-cart]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build catalog image
+        run: docker build -t retail-catalog:ci ./catalog
+      - name: Build cart image
+        run: docker build -t retail-cart:ci ./cart
+      - name: Smoke test — catalog
+        run: |
+          docker run -d --name catalog -p 8080:8080 retail-catalog:ci
+          sleep 5
+          curl -f http://localhost:8080/health
+          docker stop catalog
+      - name: Smoke test — cart
+        run: |
+          docker run -d --name cart -p 8081:8081 retail-cart:ci
+          sleep 5
+          curl -f http://localhost:8081/health
+          docker stop cart
+
+  k8s-validate:
+    name: Kubernetes Manifests — Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeval
+        run: |
+          curl -sL https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz | tar xz
+          sudo mv kubeval /usr/local/bin/
+      - name: Validate K8s manifests
+        run: kubeval k8s/*.yaml --ignore-missing-schemas
